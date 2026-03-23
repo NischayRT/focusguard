@@ -10,6 +10,11 @@
 [![Supabase](https://img.shields.io/badge/Supabase-Auth%20%2B%20DB-3ECF8E?style=flat-square&logo=supabase)](https://supabase.com)
 
 ---
+## Download
+
+[![Download for Windows](https://img.shields.io/badge/Download-Windows%20Installer-0078D4?style=for-the-badge&logo=windows)](https://github.com/NischayRT/focusguard/releases/download/v1.0.0/FocusGuard-Setup-1.0.0.exe)
+
+[View all releases](https://github.com/NischayRT/focusguard/releases/tag/v1.0.0)
 
 ## What is FocusGuard?
 
@@ -546,3 +551,4 @@ Please do not submit PRs that:
 ## Author
 
 Built by **Nischay Reddy Thigulla** — [GitHub](https://github.com/NischayRT) · [Portfolio](https://nischay-reddy.vercel.app)
+
