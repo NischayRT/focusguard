@@ -6,8 +6,14 @@ import { SettingsProvider } from '../../lib/settings'
 
 function fmtTime(sec) {
   if (!sec) return '0s'
-  const m = Math.floor(sec / 60), s = sec % 60
-  return s ? `${m}m ${s}s` : `${m}m`
+  const h = Math.floor(sec / 3600)
+  const m = Math.floor((sec % 3600) / 60)
+  const s = sec % 60
+  const parts = []
+  if (h > 0) parts.push(`${h}h`)
+  if (m > 0) parts.push(`${m}m`)
+  if (s > 0 || parts.length === 0) parts.push(`${s}s`)
+  return parts.join(' ')
 }
 function fmtDate(iso) {
   return new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })

@@ -4,13 +4,26 @@ import { useState } from 'react'
 import { saveSession } from '../lib/supabase'
 
 function fmtDuration(sec) {
-  const m = Math.floor(sec / 60), s = sec % 60
-  return s > 0 ? `${m}m ${s}s session` : `${m} min session`
+  const h = Math.floor(sec / 3600)
+  const m = Math.floor((sec % 3600) / 60)
+  const s = sec % 60
+  const parts = []
+  if (h > 0) parts.push(`${h}h`)
+  if (m > 0) parts.push(`${m}m`)
+  if (s > 0 || parts.length === 0) parts.push(`${s}s`)
+  return parts.join(' ') + ' session'
 }
+
 function fmtTime(sec) {
   if (!sec) return '0s'
-  const m = Math.floor(sec / 60), s = sec % 60
-  return s ? `${m}m ${s}s` : `${m}m`
+  const h = Math.floor(sec / 3600)
+  const m = Math.floor((sec % 3600) / 60)
+  const s = sec % 60
+  const parts = []
+  if (h > 0) parts.push(`${h}h`)
+  if (m > 0) parts.push(`${m}m`)
+  if (s > 0 || parts.length === 0) parts.push(`${s}s`)
+  return parts.join(' ')
 }
 
 export default function ReportOverlay({ report, user, onClose, onExtend }) {
@@ -22,7 +35,6 @@ export default function ReportOverlay({ report, user, onClose, onExtend }) {
 
   const { duration, focusTime = 0, focusPct = 0, sessions = 1, timeline = [] } = report
   const awayTime  = Math.max(0, duration - focusTime)
-  const totalMins = Math.round(duration / 60)
 
   const grade =
     focusPct >= 90 ? { label: 'EXCELLENT', color: 'var(--accent)' } :
@@ -46,34 +58,25 @@ export default function ReportOverlay({ report, user, onClose, onExtend }) {
     <div
       onClick={e => e.target === e.currentTarget && onClose()}
       style={{
-        position: 'fixed', inset: 0, zIndex: 200,
-        background: 'rgba(0,0,0,0.5)',
-        backdropFilter: 'blur(10px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 24,
+        position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.5)',
+        backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
       }}
     >
       <div style={{
-        width: '100%', maxWidth: 440,
-        background: 'var(--bg-3)',
-        border: '1px solid var(--border-3)',
-        borderRadius: 20,
-        overflow: 'hidden',
-        boxShadow: '0 24px 80px rgba(0,0,0,0.2)',
-        animation: 'modalIn 0.25s ease',
+        width: '100%', maxWidth: 440, background: 'var(--bg-3)', border: '1px solid var(--border-3)',
+        borderRadius: 20, overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,0.2)', animation: 'modalIn 0.25s ease',
       }}>
 
         {/* Header */}
         <div style={{
-          padding: '24px 28px 20px',
-          borderBottom: '1px solid var(--border)',
+          padding: '24px 28px 20px', borderBottom: '1px solid var(--border)',
           display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
         }}>
           <div>
             <div style={{ fontSize: 14, color: 'var(--text-3)', letterSpacing: '0.18em', marginBottom: 6 }}>
               SESSION COMPLETE
             </div>
-            <div style={{ fontSize: 22, color: 'var(--text)', fontFamily: "'JetBrains Mono', monospace", fontWeight: 300 }}>
+            <div style={{ fontSize: 20, color: 'var(--text)', fontFamily: "'JetBrains Mono', monospace", fontWeight: 300 }}>
               {fmtDuration(duration)}
             </div>
           </div>
@@ -96,10 +99,10 @@ export default function ReportOverlay({ report, user, onClose, onExtend }) {
           ].map(({ label, value, color }) => (
             <div key={label} style={{
               background: 'var(--bg-2)', border: '1px solid var(--border-2)',
-              borderRadius: 12, padding: '14px 12px', textAlign: 'center',
+              borderRadius: 12, padding: '14px 10px', textAlign: 'center',
             }}>
               <div style={{ fontSize: 12, color: 'var(--text-3)', letterSpacing: '0.14em', marginBottom: 8 }}>{label}</div>
-              <div style={{ fontSize: 18, color, fontFamily: "'JetBrains Mono', monospace", fontWeight: 300 }}>{value}</div>
+              <div style={{ fontSize: 16, color, fontFamily: "'JetBrains Mono', monospace", fontWeight: 300 }}>{value}</div>
             </div>
           ))}
         </div>
@@ -128,8 +131,7 @@ export default function ReportOverlay({ report, user, onClose, onExtend }) {
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 44 }}>
               {timeline.map(({ minute, focus_pct }) => (
                 <div key={minute} title={`Min ${minute + 1}: ${focus_pct}%`} style={{
-                  flex: 1, borderRadius: 2, minWidth: 4,
-                  height: `${Math.max(focus_pct, 5)}%`,
+                  flex: 1, borderRadius: 2, minWidth: 4, height: `${Math.max(focus_pct, 5)}%`,
                   background: focus_pct >= 70 ? 'var(--accent)' : focus_pct >= 40 ? 'var(--yellow)' : 'var(--red)',
                   opacity: 0.85, transition: 'height 0.4s ease',
                 }}/>
@@ -153,31 +155,24 @@ export default function ReportOverlay({ report, user, onClose, onExtend }) {
         {/* Actions */}
         <div style={{ padding: '0 28px 28px', display: 'flex', gap: 8 }}>
           <button onClick={onExtend} style={{
-            flex: 1, padding: '12px 0', borderRadius: 10, cursor: 'pointer',
-            background: 'transparent', border: '1px solid var(--border-3)',
-            color: 'var(--teal)', fontSize: 12, fontFamily: "'JetBrains Mono', monospace",
-            letterSpacing: '0.12em', transition: 'all 0.15s',
+            flex: 1, padding: '12px 0', borderRadius: 10, cursor: 'pointer', background: 'transparent', border: '1px solid var(--border-3)',
+            color: 'var(--teal)', fontSize: 12, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.12em', transition: 'all 0.15s',
           }}>
             +5 MIN
           </button>
 
           {!saved && (
             <button onClick={handleSave} disabled={saving} style={{
-              flex: 1, padding: '12px 0', borderRadius: 10, cursor: saving ? 'default' : 'pointer',
-              background: 'var(--surface)', border: '1px solid var(--border-3)',
-              color: saving ? 'var(--text-3)' : 'var(--accent)',
-              fontSize: 12, fontFamily: "'JetBrains Mono', monospace",
-              letterSpacing: '0.12em', transition: 'all 0.15s',
+              flex: 1, padding: '12px 0', borderRadius: 10, cursor: saving ? 'default' : 'pointer', background: 'var(--surface)', border: '1px solid var(--border-3)',
+              color: saving ? 'var(--text-3)' : 'var(--accent)', fontSize: 12, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.12em', transition: 'all 0.15s',
             }}>
               {saving ? 'SAVING...' : user ? 'SAVE' : 'SIGN IN TO SAVE'}
             </button>
           )}
 
           <button onClick={onClose} style={{
-            flex: 1, padding: '12px 0', borderRadius: 10, cursor: 'pointer',
-            background: 'transparent', border: '1px solid var(--border-3)',
-            color: 'var(--text-3)', fontSize: 12, fontFamily: "'JetBrains Mono', monospace",
-            letterSpacing: '0.12em', transition: 'all 0.15s',
+            flex: 1, padding: '12px 0', borderRadius: 10, cursor: 'pointer', background: 'transparent', border: '1px solid var(--border-3)',
+            color: 'var(--text-3)', fontSize: 12, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.12em', transition: 'all 0.15s',
           }}>
             CLOSE
           </button>
@@ -185,10 +180,7 @@ export default function ReportOverlay({ report, user, onClose, onExtend }) {
       </div>
 
       <style>{`
-        @keyframes modalIn {
-          from { opacity: 0; transform: scale(0.96) translateY(8px); }
-          to   { opacity: 1; transform: scale(1)    translateY(0); }
-        }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
       `}</style>
     </div>
   )

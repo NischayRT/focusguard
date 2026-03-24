@@ -3,89 +3,68 @@
 import { useState } from 'react'
 import { useSettings } from '../lib/settings'
 
-// Editable duration field — click to type, shows minutes
-function DurationField({ value, onChange, min = 1, max = 120 }) {
+// Editable duration field — separate Hours and Minutes
+function DurationField({ value, onChange }) {
   const [editing, setEditing] = useState(false)
-  const [draft,   setDraft]   = useState('')
-  const mins = Math.floor(value / 60)
+  
+  const h = Math.floor(value / 3600)
+  const m = Math.floor((value % 3600) / 60)
+  
+  const [draftH, setDraftH] = useState('')
+  const [draftM, setDraftM] = useState('')
 
   function startEdit() {
-    setDraft(String(mins))
+    setDraftH(String(h))
+    setDraftM(String(m))
     setEditing(true)
   }
 
   function commit() {
-    const parsed = parseInt(draft, 10)
-    if (!isNaN(parsed) && parsed >= min && parsed <= max) {
-      onChange(parsed * 60)
-    }
+    const parsedH = parseInt(draftH) || 0
+    const parsedM = Math.min(59, parseInt(draftM) || 0) // Strictly cap minutes at 59
+    onChange((parsedH * 3600) + (parsedM * 60))
     setEditing(false)
   }
 
   function handleKey(e) {
     if (e.key === 'Enter') commit()
     if (e.key === 'Escape') setEditing(false)
-    // only allow digits
     if (!/[\d\b]/.test(e.key) && !['ArrowLeft','ArrowRight','Delete','Tab'].includes(e.key)) {
       e.preventDefault()
     }
   }
 
+  const inputStyle = {
+    width: 34, textAlign: 'center', fontSize: 13,
+    color: 'var(--accent)', background: 'var(--bg-3)',
+    border: '1px solid var(--accent)', borderRadius: 6, padding: '2px 4px',
+    fontFamily: "'JetBrains Mono', monospace", outline: 'none',
+  }
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      <button onClick={() => onChange(Math.max(min * 60, value - 60))} style={{
-        width: 22, height: 22, borderRadius: 5,
-        border: '1px solid var(--border-2)',
-        background: 'transparent', color: 'var(--text-3)', cursor: 'pointer', fontSize: 14,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        transition: 'color 0.15s',
-      }}
-        onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
-        onMouseLeave={e => e.currentTarget.style.color = 'var(--text-3)'}
-      >−</button>
-
       {editing ? (
-        <input
-          autoFocus
-          value={draft}
-          onChange={e => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={handleKey}
-          style={{
-            width: 44, textAlign: 'center', fontSize: 13,
-            color: 'var(--accent)', background: 'var(--bg-3)',
-            border: '1px solid var(--accent)',
-            borderRadius: 6, padding: '2px 4px',
-            fontFamily: "'JetBrains Mono', monospace",
-            outline: 'none',
-          }}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <input autoFocus value={draftH} onChange={e => setDraftH(e.target.value)} onBlur={commit} onKeyDown={handleKey} style={inputStyle} placeholder="0h" />
+          <span style={{ color: 'var(--text-3)' }}>h</span>
+          <input value={draftM} onChange={e => setDraftM(e.target.value)} onBlur={commit} onKeyDown={handleKey} style={inputStyle} placeholder="0m" />
+          <span style={{ color: 'var(--text-3)' }}>m</span>
+        </div>
       ) : (
         <button onClick={startEdit} title="Click to edit" style={{
-          width: 44, textAlign: 'center', fontSize: 13,
+          textAlign: 'center', fontSize: 13,
           color: 'var(--accent)', background: 'transparent',
           border: '1px solid var(--border)',
-          borderRadius: 6, padding: '3px 4px', cursor: 'text',
+          borderRadius: 6, padding: '4px 8px', cursor: 'text',
           fontFamily: "'JetBrains Mono', monospace",
           transition: 'border-color 0.15s',
         }}
           onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-3)'}
           onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
         >
-          {mins}m
+          {h > 0 ? `${h}h ` : ''}{m}m
         </button>
       )}
-
-      <button onClick={() => onChange(Math.min(max * 60, value + 60))} style={{
-        width: 22, height: 22, borderRadius: 5,
-        border: '1px solid var(--border-2)',
-        background: 'transparent', color: 'var(--text-3)', cursor: 'pointer', fontSize: 14,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        transition: 'color 0.15s',
-      }}
-        onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
-        onMouseLeave={e => e.currentTarget.style.color = 'var(--text-3)'}
-      >+</button>
     </div>
   )
 }
@@ -96,8 +75,7 @@ export default function SettingsPanel({ onClose }) {
   const row = (label, control, note) => (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '10px 0', borderBottom: '1px solid var(--border)',
-      gap: 8,
+      padding: '10px 0', borderBottom: '1px solid var(--border)', gap: 8,
     }}>
       <div>
         <span style={{ fontSize: 12, color: 'var(--text-3)', letterSpacing: '0.1em' }}>{label}</span>
@@ -114,59 +92,43 @@ export default function SettingsPanel({ onClose }) {
       position: 'relative', transition: 'background 0.2s', flexShrink: 0,
     }}>
       <div style={{
-        width: 14, height: 14, borderRadius: '50%',
-        background: settings[key] ? 'var(--bg)' : 'var(--text-4)',
-        position: 'absolute', top: 3,
-        left: settings[key] ? 19 : 3,
-        transition: 'left 0.2s, background 0.2s',
+        width: 14, height: 14, borderRadius: '50%', background: settings[key] ? 'var(--bg)' : 'var(--text-4)',
+        position: 'absolute', top: 3, left: settings[key] ? 19 : 3, transition: 'left 0.2s, background 0.2s',
       }}/>
     </button>
   )
 
   const sectionLabel = (text) => (
-    <div style={{
-      fontSize: 11, color: 'var(--text-5)', letterSpacing: '0.16em',
-      marginTop: 16, marginBottom: 4,
-    }}>{text}</div>
+    <div style={{ fontSize: 11, color: 'var(--text-5)', letterSpacing: '0.16em', marginTop: 16, marginBottom: 4 }}>
+      {text}
+    </div>
   )
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-
       {/* Header */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 14,
-      }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
         <span style={{ fontSize: 14, color: 'var(--text-3)', letterSpacing: '0.18em' }}>SETTINGS</span>
         <button onClick={onClose} style={{
-          background: 'transparent', border: 'none', cursor: 'pointer',
-          color: 'var(--text-4)', fontSize: 22, lineHeight: 1, padding: 2,
-          transition: 'color 0.15s',
-        }}
-          onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
-          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-4)'}
-        >×</button>
+          background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-4)', 
+          fontSize: 22, lineHeight: 1, padding: 2, transition: 'color 0.15s',
+        }} onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-4)'}>×</button>
       </div>
 
       {/* Durations */}
       {sectionLabel('DURATIONS')}
-      {row('Focus', <DurationField value={settings.focusDuration} onChange={v => update('focusDuration', v)} min={1} max={120}/>, 'Click value to type')}
-      {row('Short break', <DurationField value={settings.shortBreakDuration} onChange={v => update('shortBreakDuration', v)} min={1} max={60}/>)}
-      {row('Long break', <DurationField value={settings.longBreakDuration} onChange={v => update('longBreakDuration', v)} min={1} max={60}/>)}
+      {row('Focus', <DurationField value={settings.focusDuration} onChange={v => update('focusDuration', v)} />, 'Click value to type')}
+      {row('Short break', <DurationField value={settings.shortBreakDuration} onChange={v => update('shortBreakDuration', v)} />)}
+      {row('Long break', <DurationField value={settings.longBreakDuration} onChange={v => update('longBreakDuration', v)} />)}
 
       {/* Sensitivity */}
       {sectionLabel('AI SENSITIVITY')}
       <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
         {['strict', 'balanced', 'relaxed'].map(s => (
           <button key={s} onClick={() => update('sensitivity', s)} style={{
-            flex: 1, padding: '6px 0', borderRadius: 7, cursor: 'pointer',
-            fontSize: 10, letterSpacing: '0.1em',
-            fontFamily: "'JetBrains Mono', monospace",
-            background: settings.sensitivity === s ? 'var(--surface)' : 'transparent',
-            color: settings.sensitivity === s ? 'var(--accent)' : 'var(--text-5)',
-            border: settings.sensitivity === s ? '1px solid var(--accent-dim)' : '1px solid var(--border)',
-            transition: 'all 0.15s',
+            flex: 1, padding: '6px 0', borderRadius: 7, cursor: 'pointer', fontSize: 10, letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace",
+            background: settings.sensitivity === s ? 'var(--surface)' : 'transparent', color: settings.sensitivity === s ? 'var(--accent)' : 'var(--text-5)',
+            border: settings.sensitivity === s ? '1px solid var(--accent-dim)' : '1px solid var(--border)', transition: 'all 0.15s',
           }}>
             {s.toUpperCase()}
           </button>
@@ -185,15 +147,9 @@ export default function SettingsPanel({ onClose }) {
         <div style={{ padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <span style={{ fontSize: 12, color: 'var(--text-3)', letterSpacing: '0.1em' }}>Volume</span>
-            <span style={{ fontSize: 11, color: 'var(--accent)', fontFamily: "'JetBrains Mono', monospace" }}>
-              {Math.round(settings.volume * 100)}%
-            </span>
+            <span style={{ fontSize: 11, color: 'var(--accent)', fontFamily: "'JetBrains Mono', monospace" }}>{Math.round(settings.volume * 100)}%</span>
           </div>
-          <input type="range" min="0" max="1" step="0.05"
-            value={settings.volume}
-            onChange={e => update('volume', parseFloat(e.target.value))}
-            style={{ width: '100%', accentColor: 'var(--accent)', cursor: 'pointer' }}
-          />
+          <input type="range" min="0" max="1" step="0.05" value={settings.volume} onChange={e => update('volume', parseFloat(e.target.value))} style={{ width: '100%', accentColor: 'var(--accent)', cursor: 'pointer' }} />
         </div>
       )}
 
@@ -202,13 +158,9 @@ export default function SettingsPanel({ onClose }) {
       <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
         {['dark', 'light'].map(t => (
           <button key={t} onClick={() => update('theme', t)} style={{
-            flex: 1, padding: '7px 0', borderRadius: 7, cursor: 'pointer',
-            fontSize: 10, letterSpacing: '0.1em',
-            fontFamily: "'JetBrains Mono', monospace",
-            background: settings.theme === t ? 'var(--surface)' : 'transparent',
-            color: settings.theme === t ? 'var(--accent)' : 'var(--text-5)',
-            border: settings.theme === t ? '1px solid var(--accent-dim)' : '1px solid var(--border)',
-            transition: 'all 0.15s',
+            flex: 1, padding: '7px 0', borderRadius: 7, cursor: 'pointer', fontSize: 10, letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace",
+            background: settings.theme === t ? 'var(--surface)' : 'transparent', color: settings.theme === t ? 'var(--accent)' : 'var(--text-5)',
+            border: settings.theme === t ? '1px solid var(--accent-dim)' : '1px solid var(--border)', transition: 'all 0.15s',
           }}>
             {t === 'dark' ? '◑ DARK' : '○ LIGHT'}
           </button>
@@ -217,11 +169,8 @@ export default function SettingsPanel({ onClose }) {
 
       {/* Reset */}
       <button onClick={reset} style={{
-        marginTop: 18, padding: '8px 0', borderRadius: 8, cursor: 'pointer',
-        background: 'transparent', border: '1px solid var(--border)',
-        color: 'var(--text-5)', fontSize: 12, fontFamily: "'JetBrains Mono', monospace",
-        letterSpacing: '0.12em', transition: 'all 0.15s',
-        width: '100%',
+        marginTop: 18, padding: '8px 0', borderRadius: 8, cursor: 'pointer', background: 'transparent', border: '1px solid var(--border)',
+        color: 'var(--text-5)', fontSize: 12, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.12em', transition: 'all 0.15s', width: '100%',
       }}
         onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(240,106,74,0.3)'; e.currentTarget.style.color = 'var(--red)' }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-5)' }}
