@@ -221,7 +221,7 @@ export default function WebcamPreview({ active, onScoreUpdate }) {
 
       {/* FACE / EYES / GAZE pills */}
       {gaze && active && (
-        <div className="grid grid-cols-3 gap-1">
+        <div className="grid grid-cols-3 gap-1 pt-3">
           {[
             { label: 'FACE', value: gaze.face_detected ? 'YES' : 'NO',    color: gaze.face_detected ? 'var(--accent)' : 'var(--red)' },
             { label: 'EYES', value: gaze.eyes_closed   ? 'CLOSED' : 'OPEN', color: gaze.eyes_closed ? 'var(--yellow)' : 'var(--text-3)' },

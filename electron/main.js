@@ -9,8 +9,8 @@ const isDev = !app.isPackaged
 // Queue deep link URLs that arrive before the window is ready
 let pendingOAuthUrl = null
 
-// Register focusguard:// deep link for OAuth callback
-app.setAsDefaultProtocolClient('focusguard')
+// Register Drsti:// deep link for OAuth callback
+app.setAsDefaultProtocolClient('drsti')
 
 // Single instance lock — MUST be called before app.whenReady()
 // On Windows, OAuth deep link opens a second instance with the URL as argv
@@ -27,10 +27,10 @@ let splashWindow = null
 let apiProcess   = null
 
 // ── Path resolution ──────────────────────────────────────────────────────────
-// In dev:  python-api/focusguard-api  (or run manually with python app.py)
-// In prod: resources/focusguard-api   (bundled by electron-builder)
+// In dev:  python-api/Drsti-api  (or run manually with python app.py)
+// In prod: resources/Drsti-api   (bundled by electron-builder)
 function getApiPath() {
-  const bin = 'focusguard-api.exe'
+  const bin = 'Drsti-api.exe'
   if (isDev) {
     // Dev: binary is in python-api/dist/ relative to project root
     return path.join(__dirname, '..', 'python-api', 'dist', bin)
@@ -116,7 +116,7 @@ function startPythonApi() {
     apiProcess = spawn(apiPath, [], {
       detached: false,
       stdio:    'ignore',
-      env:      { ...process.env, FOCUSGUARD_ENV: 'production' },
+      env:      { ...process.env, Drsti_ENV: 'production' },
     })
 
     apiProcess.on('error', (err) => {
@@ -159,7 +159,7 @@ function stopPythonApi() {
 // ── App lifecycle ─────────────────────────────────────────────────────────────
 app.whenReady().then(async () => {
   // Check if app was opened directly via deep link (first launch via protocol handler)
-  const deepLinkArg = process.argv.find(arg => arg.startsWith('focusguard://'))
+  const deepLinkArg = process.argv.find(arg => arg.startsWith('drsti://'))
   if (deepLinkArg) pendingOAuthUrl = deepLinkArg
   // Intercept file:// requests — rewrite /_next/ paths to the correct out/ location
   // This fixes asset loading from nested pages like history/index.html
@@ -214,17 +214,6 @@ ipcMain.on('notify-distraction', (_event, { message }) => {
     new Notification({
       title: 'Drsti',
       body:  message || 'You drifted — come back!',
-      silent: false,
-    }).show()
-  }
-})
-
-ipcMain.on('notify-refocus', (_event, { message }) => {
-  if (Notification.isSupported()) {
-    new Notification({
-      title: 'Drsti',
-      body:  message || 'Back in focus — keep going.',
-      silent: false,
     }).show()
   }
 })
@@ -264,6 +253,6 @@ app.on('open-url', (_event, url) => {
 
 // Windows: deep link arrives as argv of second instance
 app.on('second-instance', (_event, commandLine) => {
-  const url = commandLine.find(arg => arg.startsWith('focusguard://'))
+  const url = commandLine.find(arg => arg.startsWith('drsti://'))
   if (url) deliverOAuthUrl(url)
 })
